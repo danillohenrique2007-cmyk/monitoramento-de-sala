@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Core - IoT Dashboard (Python)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+  <!-- Sidebar / Navegação -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo-icon">⚡</div>
+      <h2>SmartCore <span>Python</span></h2>
+    </div>
+    
+    <nav class="nav-menu">
+      <button class="nav-item active" onclick="switchTab('dashboard')">
+        <span class="icon">📊</span> Visão Geral
+      </button>
+      <button class="nav-item" onclick="switchTab('devices')">
+        <span class="icon">🔌</span> Dispositivos
+      </button>
+      <button class="nav-item" onclick="switchTab('sensors')">
+        <span class="icon">📡</span> Sensores
+      </button>
+      <button class="nav-item" onclick="switchTab('analytics')">
+        <span class="icon">📈</span> Gráficos
+      </button>
+      <button class="nav-item" onclick="switchTab('alerts')">
+        <span class="icon">🔔</span> Alertas <span class="badge" id="alert-count">2</span>
+      </button>
+      <button class="nav-item feature-tab" onclick="switchTab('feature')">
+        <span class="icon">🚀</span> Proposta Equipe 01
+      </button>
+    </nav>
+
+    <div class="system-status">
+      <div class="status-indicator online"></div>
+      <div class="status-info">
+        <p class="status-title">Backend Python Ativo</p>
+        <p class="status-sub">Latência: <span id="latency-val">24ms</span></p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo Principal -->
+  <main class="main-content">
+    
+    <!-- Top Header -->
+    <header class="top-bar">
+      <div class="page-title">
+        <h1 id="tab-title">Visão Geral do Sistema</h1>
+        <p id="tab-subtitle">Monitoramento e controle em tempo real (Conectado via Python API)</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="toggleSim()">
+          <span id="sim-icon">⏸️</span> <span id="sim-text">Pausar Simulação</span>
+        </button>
+        <div class="user-profile">
+          <div class="avatar">E1</div>
+          <span>Equipe 01</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="tab-content active">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Temperatura</span>
+            <span class="metric-icon">🌡️</span>
+          </div>
+          <div class="metric-value"><span id="temp-val">24.5</span>°C</div>
+          <div class="metric-footer positive">↑ Atualizado pelo Python</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Umidade do Ar</span>
+            <span class="metric-icon">💧</span>
+          </div>
+          <div class="metric-value"><span id="humidity-val">58</span>%</div>
+          <div class="metric-footer neutral">Nível Ideal</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Consumo Atual</span>
+            <span class="metric-icon">⚡</span>
+          </div>
+          <div class="metric-value"><span id="power-val">1.42</span> kW</div>
+          <div class="metric-footer negative">↑ Média estimada</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Status da Bateria</span>
+            <span class="metric-icon">🔋</span>
+          </div>
+          <div class="metric-value"><span id="battery-val">92</span>%</div>
+          <div class="metric-footer positive">Rede Principal</div>
+        </div>
+      </div>
+
+      <div class="dashboard-split">
+        <div class="card chart-preview-card">
+          <h3>Consumo Energético nas Últimas Horas</h3>
+          <div class="chart-container-sm">
+            <canvas id="quickChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card quick-controls-card">
+          <h3>Controles Rápidos</h3>
+          <div class="quick-switches">
+            <div class="switch-row">
+              <div>
+                <strong>Iluminação Principal</strong>
+                <p class="subtext">Sala de Estar</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="dev-light" checked onchange="toggleDevice('light')">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="switch-row">
+              <div>
+                <strong>Ar Condicionado</strong>
+                <p class="subtext">Modo Eco - 23°C</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="dev-ac" checked onchange="toggleDevice('ac')">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="switch-row">
+              <div>
+                <strong>Bomba d'Água</strong>
+                <p class="subtext">Reservatório Principal</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="dev-pump" onchange="toggleDevice('pump')">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DEVICES -->
+    <section id="tab-devices" class="tab-content">
+      <div class="card">
+        <h3>Atuadores e Dispositivos Conectados</h3>
+        <p class="card-subtitle">Gerencie os estados dos dispositivos com resposta do servidor Python.</p>
+        
+        <div class="devices-grid">
+          <div class="device-card" id="card-light">
+            <div class="device-icon">💡</div>
+            <div class="device-info">
+              <h4>Iluminação Geral</h4>
+              <p>Status: <span id="status-light" class="status-on">LIGADO</span></p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="dev-light-2" checked onchange="syncDevice('light', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="device-card" id="card-ac">
+            <div class="device-icon">❄️</div>
+            <div class="device-info">
+              <h4>Climatização (AC)</h4>
+              <p>Status: <span id="status-ac" class="status-on">LIGADO</span></p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="dev-ac-2" checked onchange="syncDevice('ac', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="device-card" id="card-pump">
+            <div class="device-icon">🚰</div>
+            <div class="device-info">
+              <h4>Bomba D'Água</h4>
+              <p>Status: <span id="status-pump" class="status-off">DESLIGADO</span></p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="dev-pump-2" onchange="syncDevice('pump', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="device-card" id="card-alarm">
+            <div class="device-icon">🛡️</div>
+            <div class="device-info">
+              <h4>Alarme de Segurança</h4>
+              <p>Status: <span id="status-alarm" class="status-on">ARMADO</span></p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="dev-alarm" checked onchange="syncDevice('alarm', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SENSORS -->
+    <section id="tab-sensors" class="tab-content">
+      <div class="card">
+        <h3>Telemetria dos Sensores</h3>
+        <p class="card-subtitle">Dados transmitidos via servidor Flask/Python.</p>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID do Sensor</th>
+                <th>Tipo</th>
+                <th>Localização</th>
+                <th>Leitura Atual</th>
+                <th>Última Atualização</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>SEN-TMP-01</code></td>
+                <td>Temperatura (DHT22)</td>
+                <td>Ambiente Interno</td>
+                <td><strong id="sensor-temp">24.5 °C</strong></td>
+                <td>Agora mesmo</td>
+                <td><span class="tag tag-success">Ativo</span></td>
+              </tr>
+              <tr>
+                <td><code>SEN-HUM-01</code></td>
+                <td>Umidade (DHT22)</td>
+                <td>Ambiente Interno</td>
+                <td><strong id="sensor-hum">58 %</strong></td>
+                <td>Agora mesmo</td>
+                <td><span class="tag tag-success">Ativo</span></td>
+              </tr>
+              <tr>
+                <td><code>SEN-PIR-02</code></td>
+                <td>Presença / Movimento</td>
+                <td>Entrada Principal</td>
+                <td><strong id="sensor-pir">Sem Movimento</strong></td>
+                <td>Há 2s</td>
+                <td><span class="tag tag-success">Ativo</span></td>
+              </tr>
+              <tr>
+                <td><code>SEN-AIR-01</code></td>
+                <td>Qualidade do Ar (MQ-135)</td>
+                <td>Cozinha</td>
+                <td><strong id="sensor-air">412 ppm (Boa)</strong></td>
+                <td>Há 5s</td>
+                <td><span class="tag tag-success">Ativo</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: ANALYTICS -->
+    <section id="tab-analytics" class="tab-content">
+      <div class="analytics-grid">
+        <div class="card">
+          <h3>Histórico de Temperatura e Umidade</h3>
+          <div class="chart-container">
+            <canvas id="analyticsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: ALERTS -->
+    <section id="tab-alerts" class="tab-content">
+      <div class="card">
+        <h3>Central de Notificações e Alertas</h3>
+        <p class="card-subtitle">Registros de eventos anômalos detectados pelo sistema.</p>
+
+        <div class="alerts-list" id="alerts-container">
+          <div class="alert-item alert-danger">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-body">
+              <h4>Pico de Consumo Energético</h4>
+              <p>O consumo ultrapassou o limite estabelecido de 1.5kW por mais de 10 minutos.</p>
+              <small>Hoje às 14:22</small>
+            </div>
+            <button class="btn-sm" onclick="this.parentElement.remove()">Resolver</button>
+          </div>
+
+          <div class="alert-item alert-warning">
+            <div class="alert-icon">⚡</div>
+            <div class="alert-body">
+              <h4>Oscilação na Conexão Wi-Fi</h4>
+              <p>A latência do módulo principal subiu para 120ms pontualmente.</p>
+              <small>Hoje às 12:05</small>
+            </div>
+            <button class="btn-sm" onclick="this.parentElement.remove()">Resolver</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: PROPOSTA EQUIPE 01 -->
+    <section id="tab-feature" class="tab-content">
+      <div class="card feature-card">
+        <div class="feature-badge">Proposta Integrada da Equipe 01</div>
+        <h2>Módulo de Gestão Inteligente & Automação Preditiva</h2>
+        <p class="feature-desc">
+          Como melhoria própria exigida no escopo do projeto, propomos a inclusão de um módulo de 
+          <strong>Automação Baseada em Padrões do Usuário</strong> processado pelo backend em Python.
+        </p>
+
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="f-icon">🧠</div>
+            <h4>Desligamento Inteligente</h4>
+            <p>Se nenhum movimento for detectado por mais de 20 min, luzes e AC são desligados automaticamente.</p>
+          </div>
+          <div class="feature-item">
+            <div class="f-icon">📊</div>
+            <h4>Meta de Gastos</h4>
+            <p>Defina um teto mensal em kWh. O backend ajusta o uso dos atuadores para economizar.</p>
+          </div>
+          <div class="feature-item">
+            <div class="f-icon">🛡️</div>
+            <h4>Diagnóstico Preventivo</h4>
+            <p>Identifica padrões estranhos no consumo do AC ou da Bomba antes que ocorram falhas.</p>
+          </div>
+        </div>
+
+        <div class="feature-demo">
+          <h3>Ativar Modo Economia Inteligente</h3>
+          <div class="switch-row inline-switch">
+            <span>Ativar otimização automática por IA no aplicativo:</span>
+            <label class="switch">
+              <input type="checkbox" id="ai-mode" onchange="toggleAiMode(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div id="ai-status" class="ai-status-box hidden">
+            ✨ Modo Inteligente Ativo: Algoritmo Python monitorando e otimizando consumo...
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
